@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>PPL Planning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --push: #FF4D4D;
+    --pull: #4D9EFF;
+    --legs: #3DBA72;
+    --pushplus: #A855F7;
+    --cardio: #FF9A3C;
+    --diet: #06D6A0;
+    --bg: #0A0A0F;
+    --surface: #111118;
+    --surface2: #18181F;
+    --border: rgba(255,255,255,0.06);
+    --text: #F0F0F5;
+    --muted: #6B6B80;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    padding: env(safe-area-inset-top, 20px) 20px 0;
+    padding-top: calc(env(safe-area-inset-top, 20px) + 24px);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: -60px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(255,77,77,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 14vw, 72px);
+    letter-spacing: 0.04em;
+    line-height: 0.9;
+    background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.4) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 10px;
+    font-weight: 300;
+    letter-spacing: 0.02em;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .stat-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.04em;
+    color: var(--push);
+  }
+  .stat-val.blue { color: var(--pull); }
+  .stat-val.green { color: var(--legs); }
+  .stat-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ── TABS ── */
+  .tabs-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg);
+    padding: 14px 0 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .tabs-scroll {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0 16px;
+  }
+  .tabs-scroll::-webkit-scrollbar { display: none; }
+
+  .tab {
+    flex-shrink: 0;
+    padding: 10px 16px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  .tab.active { color: var(--text); }
+  .tab[data-day="0"].active { border-color: var(--push); }
+  .tab[data-day="1"].active { border-color: var(--pull); }
+  .tab[data-day="2"].active { border-color: var(--legs); }
+  .tab[data-day="3"].active { border-color: var(--pushplus); }
+  .tab[data-day="4"].active { border-color: var(--cardio); }
+  .tab[data-day="5"].active { border-color: var(--diet); }
+
+  /* ── PANELS ── */
+  .panel { display: none; padding: 24px 16px 40px; }
+  .panel.active { display: block; animation: fadeUp 0.3s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── DAY HEADER ── */
+  .day-header {
+    margin-bottom: 24px;
+  }
+  .day-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px 4px 4px;
+    background: var(--surface2);
+    border-radius: 100px;
+    margin-bottom: 12px;
+  }
+  .day-dot {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex;align-items: center;justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    color: #000;
+  }
+  .day-badge-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+  .day-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .day-muscles {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 300;
+    letter-spacing: 0.06em;
+  }
+  .day-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .duration-pill {
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid;
+  }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 20px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── EXERCISE CARDS ── */
+  .ex-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .ex-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+  }
+  .ex-card:active { transform: scale(0.98); }
+
+  .ex-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .ex-left { flex: 1; }
+  .ex-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .ex-name {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--text);
+  }
+  .ex-note {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    font-weight: 300;
+    font-style: italic;
+  }
+  .ex-right {
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .ex-sets {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.04em;
+    line-height: 1;
+  }
+  .ex-rest {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .superset-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    margin-top: 8px;
+  }
+
+  .ex-card.is-superset-part {
+    margin-top: -6px;
+    border-radius: 0 0 14px 14px;
+    border-top: 1px dashed var(--border);
+  }
+  .ex-card.is-superset-top {
+    border-radius: 14px 14px 0 0;
+    margin-bottom: 0;
+  }
+
+  /* ── PROGRESSION BOX ── */
+  .prog-box {
+    margin-top: 28px;
+    padding: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .prog-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .prog-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .prog-text {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 300;
+    line-height: 1.6;
+  }
+
+  /* ── DIET ── */
+  .calorie-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .calorie-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .calorie-main {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    margin-bottom: 14px;
+  }
+  .cal-item { text-align: center; }
+  .cal-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  .cal-val.highlight { color: var(--pull); }
+  .cal-label {
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 3px;
+  }
+  .calorie-sep {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    padding-top: 2px;
+  }
+  .progress-track {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: var(--diet);
+    width: 94.5%;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+  .progress-label span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .meal-block { margin-bottom: 24px; }
+  .meal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-radius: 12px 12px 0 0;
+    border: 1px solid var(--border);
+    border-bottom: none;
+  }
+  .meal-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 0.06em;
+  }
+  .meal-total {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .meal-items {
+    border: 1px solid var(--border);
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+  }
+  .food-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    transition: background 0.15s;
+  }
+  .food-row:last-child { border-bottom: none; }
+  .food-row:nth-child(even) { background: var(--surface2); }
+  .food-name {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text);
+    flex: 1;
+  }
+  .food-qty {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .food-cal {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+    margin-left: 12px;
+  }
+
+  /* Day colors */
+  .push .ex-card::before { background: var(--push); }
+  .push .ex-num { color: var(--push); }
+  .push .ex-sets { color: var(--push); }
+  .push .day-title { color: var(--push); }
+  .push .day-dot { background: var(--push); }
+  .push .duration-pill { color: var(--push); border-color: rgba(255,77,77,0.3); }
+  .push .superset-tag { background: rgba(255,77,77,0.1); color: var(--push); }
+  .push .ex-card:hover { border-color: rgba(255,77,77,0.2); }
+
+  .pull .ex-card::before { background: var(--pull); }
+  .pull .ex-num { color: var(--pull); }
+  .pull .ex-sets { color: var(--pull); }
+  .pull .day-title { color: var(--pull); }
+  .pull .day-dot { background: var(--pull); }
+  .pull .duration-pill { color: var(--pull); border-color: rgba(77,158,255,0.3); }
+  .pull .superset-tag { background: rgba(77,158,255,0.1); color: var(--pull); }
+
+  .legs .ex-card::before { background: var(--legs); }
+  .legs .ex-num { color: var(--legs); }
+  .legs .ex-sets { color: var(--legs); }
+  .legs .day-title { color: var(--legs); }
+  .legs .day-dot { background: var(--legs); }
+  .legs .duration-pill { color: var(--legs); border-color: rgba(61,186,114,0.3); }
+  .legs .superset-tag { background: rgba(61,186,114,0.1); color: var(--legs); }
+
+  .pushplus .ex-card::before { background: var(--pushplus); }
+  .pushplus .ex-num { color: var(--pushplus); }
+  .pushplus .ex-sets { color: var(--pushplus); }
+  .pushplus .day-title { color: var(--pushplus); }
+  .pushplus .day-dot { background: var(--pushplus); }
+  .pushplus .duration-pill { color: var(--pushplus); border-color: rgba(168,85,247,0.3); }
+  .pushplus .superset-tag { background: rgba(168,85,247,0.1); color: var(--pushplus); }
+
+  .cardio .ex-card::before { background: var(--cardio); }
+  .cardio .ex-num { color: var(--cardio); }
+  .cardio .ex-sets { color: var(--cardio); }
+  .cardio .day-title { color: var(--cardio); }
+  .cardio .day-dot { background: var(--cardio); color: #000; }
+  .cardio .duration-pill { color: var(--cardio); border-color: rgba(255,154,60,0.3); }
+  .cardio .superset-tag { background: rgba(255,154,60,0.1); color: var(--cardio); }
+
+  .diet-panel .meal-name { color: var(--diet); }
+  .diet-panel .meal-total { color: var(--diet); }
+  .diet-panel .day-title { color: var(--diet); }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <p class="hero-label">Programme · Semaine type</p>
+  <h1 class="hero-title">PPL<br>PLANNING</h1>
+  <p class="hero-subtitle">Push · Pull · Legs · Push+ · Cardio &amp; BW</p>
+  <div class="hero-stats">
+    <div class="stat">
+      <span class="stat-val">5</span>
+      <span class="stat-label">Séances</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val blue">~5h</span>
+      <span class="stat-label">Volume / sem</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val green">2201</span>
+      <span class="stat-label">Kcal objectif</span>
+    </div>
+  </div>
+</div>
+
+<div class="tabs-wrap">
+  <div class="tabs-scroll">
+    <button class="tab active" data-day="0">PUSH</button>
+    <button class="tab" data-day="1">PULL</button>
+    <button class="tab" data-day="2">LEGS</button>
+    <button class="tab" data-day="3">PUSH+</button>
+    <button class="tab" data-day="4">CARDIO</button>
+    <button class="tab" data-day="5">DIET</button>
+  </div>
+</div>
+
+<!-- ══════════ J1 PUSH ══════════ -->
+<div class="panel push active" data-panel="0">
+  <div class="day-header">
+    <div class="day-badge">
+      <div class="day-dot">J1</div>
+      <span class="day-badge-text">Lundi</span>
+    </div>
+    <div class="day-title">PUSH</div>
+    <div class="day-muscles">Poitrine · Épaules · Triceps</div>
+    <div class="day-meta">
+      <span class="duration-pill">⏱ ~60 min</span>
+    </div>
+  </div>
+
+  <div class="section-label">Mouvements principaux</div>
+
+  <div class="ex-card is-superset-top" style="--accent:var(--push)">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">01</div>
+        <div class="ex-name">Développé couché barre</div>
+        <div class="ex-note">Mouvement principal, charge lourde</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">4×6–8</div>
+        <div class="ex-rest">repos 2'30</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Accessoires</div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">02</div>
+        <div class="ex-name">Développé incliné haltères</div>
+        <div class="ex-note">Étirement max en bas du mouvement</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×10–12</div>
+        <div class="ex-rest">repos 2'00</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">03</div>
+        <div class="ex-name">Développé militaire haltères</div>
+        <div class="ex-note">Assis ou debout</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×10–12</div>
+        <div class="ex-rest">repos 2'00</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">04</div>
+        <div class="ex-name">Élévations latérales câble</div>
+        <div class="ex-note">Tempo lent, pas de balancé</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×15–20</div>
+        <div class="ex-rest">repos 1'00</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card is-superset-top">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">05</div>
+        <div class="ex-name">Dips triceps</div>
+        <div class="ex-note">Superset — enchaîner sans pause</div>
+        <div class="superset-tag">⚡ SUPERSET</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×10</div>
+        <div class="ex-rest">—</div>
+      </div>
+    </div>
+  </div>
+  <div class="ex-card is-superset-part">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num" style="opacity:0.4">↳</div>
+        <div class="ex-name" style="font-weight:400;color:var(--muted)">Pushdown poulie</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">×15</div>
+        <div class="ex-rest">repos 1'30</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="prog-box">
+    <div class="prog-icon">📈</div>
+    <div>
+      <div class="prog-title">Progression</div>
+      <div class="prog-text">+2,5 kg ou +1 rep par semaine sur les mouvements principaux. Tiens un carnet de séance.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ J2 PULL ══════════ -->
+<div class="panel pull" data-panel="1">
+  <div class="day-header">
+    <div class="day-badge">
+      <div class="day-dot" style="background:var(--pull);color:#000">J2</div>
+      <span class="day-badge-text">Mardi</span>
+    </div>
+    <div class="day-title">PULL</div>
+    <div class="day-muscles">Dos · Biceps · Trapèzes · Abdos</div>
+    <div class="day-meta">
+      <span class="duration-pill">⏱ ~65 min</span>
+    </div>
+  </div>
+
+  <div class="section-label">Mouvements principaux</div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">01</div>
+        <div class="ex-name">Tractions lestées</div>
+        <div class="ex-note">Amplitude complète, descente lente</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">4×6–8</div>
+        <div class="ex-rest">repos 2'30</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">02</div>
+        <div class="ex-name">T-bar row</div>
+        <div class="ex-note">Dos plat, tirage vers le sternum</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">4×8–10</div>
+        <div class="ex-rest">repos 2'00</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Accessoires</div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">03</div>
+        <div class="ex-name">Tirage horizontal câble serré</div>
+        <div class="ex-note">Coudes collés, rétraction omoplates</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×10–12</div>
+        <div class="ex-rest">repos 1'30</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">04</div>
+        <div class="ex-name">Face pull câble</div>
+        <div class="ex-note">Coudes hauts, rotation externe</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×15–20</div>
+        <div class="ex-rest">repos 1'00</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card is-superset-top">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">05</div>
+        <div class="ex-name">Curl barre EZ</div>
+        <div class="ex-note">Superset — enchaîner sans pause</div>
+        <div class="superset-tag">⚡ SUPERSET</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×10</div>
+        <div class="ex-rest">—</div>
+      </div>
+    </div>
+  </div>
+  <div class="ex-card is-superset-part">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num" style="opacity:0.4">↳</div>
+        <div class="ex-name" style="font-weight:400;color:var(--muted)">Curl marteau</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">×12</div>
+        <div class="ex-rest">repos 1'30</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Abdominaux · ~8 min</div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">A1</div>
+        <div class="ex-name">Crunch câble ou ab wheel</div>
+        <div class="ex-note">Gainage strict, pas de rebond</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×12–15</div>
+        <div class="ex-rest">repos 45s</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">A2</div>
+        <div class="ex-name">Leg raise suspendu</div>
+        <div class="ex-note">Bassin rétroversé en haut</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×12–15</div>
+        <div class="ex-rest">repos 45s</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="prog-box">
+    <div class="prog-icon">📈</div>
+    <div>
+      <div class="prog-title">Progression</div>
+      <div class="prog-text">+2,5 kg ou +1 rep par semaine sur les mouvements principaux. Tiens un carnet de séance.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ J3 LEGS ══════════ -->
+<div class="panel legs" data-panel="2">
+  <div class="day-header">
+    <div class="day-badge">
+      <div class="day-dot" style="background:var(--legs);color:#000">J3</div>
+      <span class="day-badge-text">Jeudi</span>
+    </div>
+    <div class="day-title">LEGS</div>
+    <div class="day-muscles">Quadriceps · Ischios · Fessiers · Mollets</div>
+    <div class="day-meta">
+      <span class="duration-pill">⏱ ~65 min</span>
+    </div>
+  </div>
+
+  <div class="section-label">Mouvements principaux</div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">01</div>
+        <div class="ex-name">Leg press pieds hauts</div>
+        <div class="ex-note">Pieds hauts = fessiers + ischios</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">4×8–10</div>
+        <div class="ex-rest">repos 2'30</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">02</div>
+        <div class="ex-name">Romanian Deadlift barre</div>
+        <div class="ex-note">Dos plat, poussée des hanches</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">4×8–10</div>
+        <div class="ex-rest">repos 2'30</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Accessoires</div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">03</div>
+        <div class="ex-name">Fentes marchées haltères</div>
+        <div class="ex-note">Step long, genou arrière au sol</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×10/j</div>
+        <div class="ex-rest">repos 2'00</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">04</div>
+        <div class="ex-name">Leg curl couché machine</div>
+        <div class="ex-note">Dorsiflexion pied = contraction max</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×12–15</div>
+        <div class="ex-rest">repos 1'30</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card is-superset-top">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">05</div>
+        <div class="ex-name">Leg extension</div>
+        <div class="ex-note">Superset — finition quadri + mollets</div>
+        <div class="superset-tag">⚡ SUPERSET</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×15</div>
+        <div class="ex-rest">—</div>
+      </div>
+    </div>
+  </div>
+  <div class="ex-card is-superset-part">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num" style="opacity:0.4">↳</div>
+        <div class="ex-name" style="font-weight:400;color:var(--muted)">Mollets debout</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">×20</div>
+        <div class="ex-rest">repos 1'30</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="prog-box">
+    <div class="prog-icon">📈</div>
+    <div>
+      <div class="prog-title">Progression</div>
+      <div class="prog-text">+2,5 kg ou +1 rep par semaine sur les mouvements principaux. Tiens un carnet de séance.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ J4 PUSH+ ══════════ -->
+<div class="panel pushplus" data-panel="3">
+  <div class="day-header">
+    <div class="day-badge">
+      <div class="day-dot" style="background:var(--pushplus);color:#fff">J4</div>
+      <span class="day-badge-text">Vendredi</span>
+    </div>
+    <div class="day-title">PUSH+</div>
+    <div class="day-muscles">Épaules · Poitrine · Triceps · Abdos</div>
+    <div class="day-meta">
+      <span class="duration-pill">⏱ ~65 min</span>
+    </div>
+  </div>
+
+  <div class="section-label">Mouvements principaux</div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">01</div>
+        <div class="ex-name">Développé militaire barre</div>
+        <div class="ex-note">Force pure, mouvement principal</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">4×6–8</div>
+        <div class="ex-rest">repos 2'30</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Accessoires</div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">02</div>
+        <div class="ex-name">Arnold Press haltères</div>
+        <div class="ex-note">Rotation complète, toutes fibres</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×10–12</div>
+        <div class="ex-rest">repos 2'00</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">03</div>
+        <div class="ex-name">Développé couché haltères</div>
+        <div class="ex-note">Amplitude supérieure à la barre</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×10–12</div>
+        <div class="ex-rest">repos 2'00</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">04</div>
+        <div class="ex-name">Écarté incliné haltères</div>
+        <div class="ex-note">Coude légèrement fléchi</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×12–15</div>
+        <div class="ex-rest">repos 1'30</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card is-superset-top">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">05</div>
+        <div class="ex-name">Dips triceps</div>
+        <div class="ex-note">Superset — chef long triceps</div>
+        <div class="superset-tag">⚡ SUPERSET</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×10</div>
+        <div class="ex-rest">—</div>
+      </div>
+    </div>
+  </div>
+  <div class="ex-card is-superset-part">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num" style="opacity:0.4">↳</div>
+        <div class="ex-name" style="font-weight:400;color:var(--muted)">Overhead câble</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">×15</div>
+        <div class="ex-rest">repos 1'30</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Abdominaux · ~8 min</div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">A1</div>
+        <div class="ex-name">Planche dynamique</div>
+        <div class="ex-note">Mountain climber lent — gainage + transverse</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×30s</div>
+        <div class="ex-rest">repos 30s</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">A2</div>
+        <div class="ex-name">Crunch câble</div>
+        <div class="ex-note">Gainage strict</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×12–15</div>
+        <div class="ex-rest">repos 45s</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="prog-box">
+    <div class="prog-icon">📈</div>
+    <div>
+      <div class="prog-title">Progression</div>
+      <div class="prog-text">+2,5 kg ou +1 rep par semaine sur les mouvements principaux. Tiens un carnet de séance.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ J5 CARDIO ══════════ -->
+<div class="panel cardio" data-panel="4">
+  <div class="day-header">
+    <div class="day-badge">
+      <div class="day-dot" style="background:var(--cardio);color:#000">J5</div>
+      <span class="day-badge-text">Samedi</span>
+    </div>
+    <div class="day-title">CARDIO<br>& BW</div>
+    <div class="day-muscles">Cardio · Poids de corps · Core</div>
+    <div class="day-meta">
+      <span class="duration-pill">⏱ ~50 min</span>
+    </div>
+  </div>
+
+  <div class="section-label">Échauffement cardio · 10 min</div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">01</div>
+        <div class="ex-name">Course / Vélo modéré</div>
+        <div class="ex-note">Zone 2 — tu peux tenir une conversation</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">20 min</div>
+        <div class="ex-rest">continu</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Circuit poids de corps · 3 rounds</div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">02</div>
+        <div class="ex-name">Pompes</div>
+        <div class="ex-note">Tempo contrôlé, poitrine au sol</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×15–20</div>
+        <div class="ex-rest">repos 30s</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">03</div>
+        <div class="ex-name">Squats sautés</div>
+        <div class="ex-note">Genoux dans l'axe, réception souple</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×20</div>
+        <div class="ex-rest">repos 30s</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">04</div>
+        <div class="ex-name">Dips sur banc</div>
+        <div class="ex-note">Triceps + épaules</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×15</div>
+        <div class="ex-rest">repos 30s</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">05</div>
+        <div class="ex-name">Fentes alternatives</div>
+        <div class="ex-note">Contrôle à la descente</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×12/j</div>
+        <div class="ex-rest">repos 30s</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">06</div>
+        <div class="ex-name">Mountain climbers</div>
+        <div class="ex-note">Core + cardio</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×30s</div>
+        <div class="ex-rest">repos 30s</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">07</div>
+        <div class="ex-name">Planche</div>
+        <div class="ex-note">Gainage strict, pas de rebond</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">3×45s</div>
+        <div class="ex-rest">repos 30s</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Retour au calme · 5 min</div>
+
+  <div class="ex-card">
+    <div class="ex-top">
+      <div class="ex-left">
+        <div class="ex-num">08</div>
+        <div class="ex-name">Étirements statiques</div>
+        <div class="ex-note">Groupes musculaires travaillés</div>
+      </div>
+      <div class="ex-right">
+        <div class="ex-sets">5 min</div>
+        <div class="ex-rest"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ DIET ══════════ -->
+<div class="panel diet-panel" data-panel="5">
+  <div class="day-header">
+    <div class="day-badge">
+      <div class="day-dot" style="background:var(--diet);color:#000">🥗</div>
+      <span class="day-badge-text">Journal · Dim. 3 mai</span>
+    </div>
+    <div class="day-title" style="color:var(--diet)">DIET</div>
+    <div class="day-muscles">Alimentation · Bilan calorique</div>
+  </div>
+
+  <div class="calorie-bar">
+    <div class="calorie-title">Bilan Calorique</div>
+    <div class="calorie-main">
+      <div class="cal-item">
+        <div class="cal-val">2201</div>
+        <div class="cal-label">Objectif</div>
+      </div>
+      <div class="calorie-sep">−</div>
+      <div class="cal-item">
+        <div class="cal-val">2131</div>
+        <div class="cal-label">Aliments</div>
+      </div>
+      <div class="calorie-sep">+</div>
+      <div class="cal-item">
+        <div class="cal-val">49</div>
+        <div class="cal-label">Exercice</div>
+      </div>
+      <div class="calorie-sep">=</div>
+      <div class="cal-item">
+        <div class="cal-val highlight">119</div>
+        <div class="cal-label">Restants</div>
+      </div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill"></div>
+    </div>
+    <div class="progress-label">
+      <span>0 kcal</span>
+      <span>2131 / 2201 kcal consommés</span>
+    </div>
+  </div>
+
+  <!-- Petit déjeuner -->
+  <div class="meal-block">
+    <div class="meal-header" style="background:rgba(61,186,114,0.08)">
+      <span class="meal-name" style="color:var(--legs)">Petit Déjeuner</span>
+      <span class="meal-total" style="color:var(--legs)">446 kcal</span>
+    </div>
+    <div class="meal-items">
+      <div class="food-row">
+        <div><div class="food-name">Miel A Tartiner</div><div class="food-qty">Nid D'abeille, 5g</div></div>
+        <div class="food-cal">16</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Cornflakes Lidl</div><div class="food-qty">Crownfield, 30g</div></div>
+        <div class="food-cal">114</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Noix De Cajou</div><div class="food-qty">20g</div></div>
+        <div class="food-cal">115</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Lait amande/vanille Bio</div><div class="food-qty">Bjorg, 100ml</div></div>
+        <div class="food-cal">37</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Evowhey White Chocolate</div><div class="food-qty">HSN, 45g</div></div>
+        <div class="food-cal">165</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Déjeuner -->
+  <div class="meal-block">
+    <div class="meal-header" style="background:rgba(77,158,255,0.08)">
+      <span class="meal-name" style="color:var(--pull)">Déjeuner</span>
+      <span class="meal-total" style="color:var(--pull)">806 kcal</span>
+    </div>
+    <div class="meal-items">
+      <div class="food-row">
+        <div><div class="food-name">Ketchup</div><div class="food-qty">Kania -50% sucre, 20ml</div></div>
+        <div class="food-cal">11</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Tanine de légumes grillés</div><div class="food-qty">Cassegrain, 180g</div></div>
+        <div class="food-cal">139</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Oeuf</div><div class="food-qty">212g</div></div>
+        <div class="food-cal">280</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Steak Haché 5%</div><div class="food-qty">110g</div></div>
+        <div class="food-cal">212</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Huile d'olive</div><div class="food-qty">5g</div></div>
+        <div class="food-cal">45</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Pomme De Terre</div><div class="food-qty">150g</div></div>
+        <div class="food-cal">120</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dîner -->
+  <div class="meal-block">
+    <div class="meal-header" style="background:rgba(168,85,247,0.08)">
+      <span class="meal-name" style="color:var(--pushplus)">Dîner</span>
+      <span class="meal-total" style="color:var(--pushplus)">601 kcal</span>
+    </div>
+    <div class="meal-items">
+      <div class="food-row">
+        <div><div class="food-name">Légume</div><div class="food-qty">100g</div></div>
+        <div class="food-cal">65</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Ketchup</div><div class="food-qty">Kania -50% sucre, 20ml</div></div>
+        <div class="food-cal">11</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Carré frais 0%</div><div class="food-qty">Elle&Vire, 50g</div></div>
+        <div class="food-cal">42</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Avocat</div><div class="food-qty">80g</div></div>
+        <div class="food-cal">164</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Escalope Poulet</div><div class="food-qty">175g</div></div>
+        <div class="food-cal">128</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Huile d'olive</div><div class="food-qty">5g</div></div>
+        <div class="food-cal">45</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Pâtes Coquillettes</div><div class="food-qty">Panzani, 40g</div></div>
+        <div class="food-cal">146</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Snacks -->
+  <div class="meal-block">
+    <div class="meal-header" style="background:rgba(255,154,60,0.08)">
+      <span class="meal-name" style="color:var(--cardio)">Snacks</span>
+      <span class="meal-total" style="color:var(--cardio)">277 kcal</span>
+    </div>
+    <div class="meal-items">
+      <div class="food-row">
+        <div><div class="food-name">Fromage Blanc 0%</div><div class="food-qty">Delisse, 100g</div></div>
+        <div class="food-cal">47</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Purée d'amande Bio</div><div class="food-qty">Maribel, 10g</div></div>
+        <div class="food-cal">66</div>
+      </div>
+      <div class="food-row">
+        <div><div class="food-name">Evowhey White Chocolate</div><div class="food-qty">HSN, 45g</div></div>
+        <div class="food-cal">165</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+    <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase">Total journalier</span>
+    <span style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:0.04em;color:var(--diet)">2131 <span style="font-size:14px;font-family:'DM Sans',sans-serif;font-weight:300;color:var(--muted)">kcal</span></span>
+  </div>
+</div>
+
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.panel');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const day = parseInt(tab.dataset.day);
+      tabs.forEach(t => t.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      panels[day].classList.add('active');
+      // Scroll tab into view
+      tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    });
+  });
+</script>
+</body>
+</html>
