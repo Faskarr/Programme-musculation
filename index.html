@@ -359,6 +359,26 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);
 .pov.open{display:flex;animation:fup .2s ease}
 .psh{width:100%;max-width:440px;background:var(--s1);border:1px solid var(--b2);
   border-radius:22px 22px 0 0;padding:22px 20px calc(env(safe-area-inset-bottom,16px) + 22px)}
+
+/* ── Carnet de charges ── */
+.lg-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--b1)}
+.lg-row:last-child{border-bottom:none}
+.lg-d{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--mu);flex:1;text-transform:uppercase}
+.lg-v{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.02em}
+.lg-rm{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--mu)}
+.lg-x{background:none;border:none;color:var(--mu);font-size:13px;cursor:pointer;padding:4px 6px;-webkit-appearance:none}
+.lg-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}
+.lg-st{background:var(--s2);border:1px solid var(--b1);border-radius:12px;padding:9px 6px;text-align:center}
+.lg-st-v{font-family:'Bebas Neue',sans-serif;font-size:20px}
+.lg-st-l{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+/* ── Macros diet ── */
+.fmac{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--mu);margin-top:2px}
+.mac-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.mac-row:last-child{margin-bottom:0}
+.mac-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;width:14px;flex-shrink:0}
+.mac-bar{flex:1;height:4px;background:var(--s2);border-radius:10px;overflow:hidden}
+.mac-fill{height:100%;border-radius:10px;transition:width .3s}
+.mac-val{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--mu);width:76px;text-align:right;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -524,6 +544,11 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);
     <div class="mf"><label>Nom</label><input class="mi" id="fN" type="text" placeholder="Poulet grillé"></div>
     <div class="mf"><label>Quantité</label><input class="mi mono" id="fQ" type="text" placeholder="150g"></div>
     <div class="mf"><label>Calories (kcal)</label><input class="mi num" id="fC" type="number" min="0" inputmode="numeric" placeholder="200"></div>
+    <div id="fMacros" style="display:flex;gap:8px">
+      <div class="mf" style="flex:1"><label>Prot (g)</label><input class="mi num" id="fP" type="number" min="0" step="0.1" inputmode="decimal" placeholder="—"></div>
+      <div class="mf" style="flex:1"><label>Gluc (g)</label><input class="mi num" id="fG" type="number" min="0" step="0.1" inputmode="decimal" placeholder="—"></div>
+      <div class="mf" style="flex:1"><label>Lip (g)</label><input class="mi num" id="fL" type="number" min="0" step="0.1" inputmode="decimal" placeholder="—"></div>
+    </div>
     <div class="macts">
       <button class="mcanc" id="fCa">Annuler</button>
       <button class="msave" id="fSa">Enregistrer</button>
@@ -544,6 +569,45 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);
       <button class="msave" id="mlSa">Enregistrer</button>
     </div>
     <button class="mdel" id="mlDl" style="display:none">🗑 Supprimer ce repas</button>
+  </div>
+</div>
+
+<!-- Carnet de charges -->
+<div class="mov" id="mLg">
+  <div class="msh">
+    <div class="mhnd"></div>
+    <div class="mttl" id="mLgT">Carnet de charges</div>
+    <div class="msub" id="mLgSub">Historique des charges pour cet exercice.</div>
+    <div style="display:flex;gap:8px">
+      <div class="mf" style="flex:1"><label>Poids (kg)</label><input class="mi num" id="lgW" type="number" min="0" step="0.5" inputmode="decimal" placeholder="80"></div>
+      <div class="mf" style="flex:1"><label>Reps</label><input class="mi num" id="lgR" type="number" min="1" inputmode="numeric" placeholder="8"></div>
+    </div>
+    <button class="msave" id="lgSa" style="width:100%;min-height:48px">＋ Enregistrer</button>
+    <div id="lgStats"></div>
+    <div id="lgChartWrap" style="display:none;background:var(--s2);border:1px solid var(--b1);border-radius:12px;padding:10px;margin-top:12px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.15em;text-transform:uppercase;color:var(--mu);margin-bottom:7px">1RM estimé · progression</div>
+      <svg id="lgChart" viewBox="0 0 300 90" style="width:100%;height:90px;display:block"></svg>
+    </div>
+    <div id="lgHist" style="margin-top:12px;max-height:190px;overflow-y:auto;background:var(--s2);border:1px solid var(--b1);border-radius:12px"></div>
+    <div class="macts">
+      <button class="mcanc" id="lgCa" style="flex:1">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Objectifs macros -->
+<div class="mov" id="mMc">
+  <div class="msh">
+    <div class="mhnd"></div>
+    <div class="mttl">Objectifs macros</div>
+    <div class="msub">Cibles journalières en grammes (0 = pas de cible).</div>
+    <div class="mf"><label>Protéines (g)</label><input class="mi num" id="mcP" type="number" min="0" inputmode="numeric" placeholder="180"></div>
+    <div class="mf"><label>Glucides (g)</label><input class="mi num" id="mcG" type="number" min="0" inputmode="numeric" placeholder="250"></div>
+    <div class="mf"><label>Lipides (g)</label><input class="mi num" id="mcL" type="number" min="0" inputmode="numeric" placeholder="70"></div>
+    <div class="macts">
+      <button class="mcanc" id="mcCa">Annuler</button>
+      <button class="msave" id="mcSa">Enregistrer</button>
+    </div>
   </div>
 </div>
 
@@ -707,7 +771,7 @@ window.FB = {
 async function loadData() {
   try {
     const wk = weekKey();
-    const [a,b,c,d,e,f,g] = await Promise.all([
+    const [a,b,c,d,e,f,g,hx] = await Promise.all([
       getDoc(uDoc('data','workouts')),
       getDoc(uDoc('data','weights')),
       getDoc(doc(db,'users',uid,'weeks',wk)),
@@ -715,6 +779,7 @@ async function loadData() {
       getDoc(uDoc('data','diet')),
       getDoc(uDoc('data','protocol')),
       getDoc(uDoc('data','profiles')),
+      getDoc(uDoc('data','exlogs')),
     ]);
     window.D.workouts    = a.exists() ? a.data() : null;
     window.D.weights     = b.exists() ? (b.data().log || []) : [];
@@ -722,6 +787,7 @@ async function loadData() {
     window.D.counterBase = d.exists() ? (d.data().base || 0) : 0;
     window.D.diet        = e.exists() ? e.data() : null;
     window.D.protocol    = f.exists() ? f.data() : null;
+    window.D.exlogs      = hx.exists() ? (hx.data().logs || {}) : {};
     window.D.profiles    = g.exists() ? g.data() : {
       workout:  {active:null, list:[]},
       diet:     {active:null, list:[]},
@@ -765,7 +831,7 @@ onAuthStateChanged(auth, async user => {
 // ── STATE ─────────────────────────────────────────────────────────────
 window.D = {
   workouts: null, weights: [], week: {}, counterBase: 0,
-  diet: null, protocol: null,
+  diet: null, protocol: null, exlogs: {},
   profiles: {
     workout:  {active: null, list: []},
     diet:     {active: null, list: []},
@@ -1072,6 +1138,9 @@ function renderWk(sid) {
     h += `<div class="empty"><div class="empty-ico">💪</div><div class="empty-h">Aucun exercice</div><div class="empty-p">Appuie sur ＋ Ajouter pour créer ton premier exercice.</div></div>`;
   } else {
     exs.forEach((e, i) => {
+      const lgArr = (D.exlogs && D.exlogs[e.id]) || [];
+      const lgLast = lgArr.length ? lgArr[lgArr.length - 1] : null;
+      const lgTxt = lgLast ? ` ${lgLast.w} kg × ${lgLast.r}` : ' Charges';
       h += `
         <div class="exc">
           <div class="exc-top">
@@ -1088,6 +1157,7 @@ function renderWk(sid) {
           <div class="exc-acts">
             <button class="abtn xed" data-sid="${sid}" data-eid="${e.id}">✏️ Modifier</button>
             <button class="abtn tbtn" data-r="${e.r}">⏱</button>
+            <button class="abtn lgbtn" data-sid="${sid}" data-eid="${e.id}">📊${lgTxt}</button>
           </div>
         </div>`;
     });
@@ -1110,6 +1180,7 @@ function renderWk(sid) {
   b.querySelector('#editSesBtn').addEventListener('click', () => openSesModal(sid));
   b.querySelectorAll('.xed').forEach(x => x.addEventListener('click', onExEdit));
   b.querySelectorAll('.tbtn').forEach(x => x.addEventListener('click', e => { e.stopPropagation(); tmrFromCard(x.dataset.r); }));
+  b.querySelectorAll('.lgbtn').forEach(x => x.addEventListener('click', e => { e.stopPropagation(); openLogModal(x.dataset.sid, x.dataset.eid); }));
 }
 
 // Session toggle (check done/undone)
@@ -1242,6 +1313,144 @@ async function delEx() {
   renderWk(sid);
 }
 
+// ── CARNET DE CHARGES ─────────────────────────────────────────────────
+// D.exlogs = { [exerciseId]: [ {ts, d:'YYYY-MM-DD', w:kg, r:reps}, ... ] }
+let _lc = null; // log context {sid, eid}
+
+// 1RM estimé — formule d'Epley : poids × (1 + reps/30)
+function est1RM(w, r) { return r <= 1 ? w : w * (1 + r / 30); }
+
+function openLogModal(sid, eid) {
+  const sess = getSession(sid);
+  const ex = (sess?.exercises || []).find(x => x.id === eid);
+  if (!ex) return;
+  _lc = {sid, eid};
+  document.getElementById('mLgT').textContent = ex.n;
+  document.getElementById('mLgSub').textContent = ex.s + ' · repos ' + ex.r;
+  document.getElementById('lgW').value = '';
+  document.getElementById('lgR').value = '';
+  // Pré-remplit avec la dernière charge loggée (progression facile)
+  const arr = (D.exlogs && D.exlogs[eid]) || [];
+  if (arr.length) {
+    document.getElementById('lgW').placeholder = arr[arr.length-1].w;
+    document.getElementById('lgR').placeholder = arr[arr.length-1].r;
+  }
+  renderLogBody();
+  document.getElementById('mLg').classList.add('open');
+}
+
+function closeLogModal() {
+  document.getElementById('mLg').classList.remove('open');
+  // Rafraîchit la carte exercice (badge dernière charge)
+  if (_lc && window._curSection === 'prog') renderWk(_lc.sid);
+  _lc = null;
+}
+
+function renderLogBody() {
+  if (!_lc) return;
+  const arr = (D.exlogs && D.exlogs[_lc.eid]) || [];
+  const st = document.getElementById('lgStats');
+  const hist = document.getElementById('lgHist');
+  const cw = document.getElementById('lgChartWrap');
+
+  if (!arr.length) {
+    st.innerHTML = '';
+    cw.style.display = 'none';
+    hist.innerHTML = '<div style="padding:14px;font-size:12px;color:var(--mu);font-style:italic;text-align:center">Aucune charge enregistrée</div>';
+    return;
+  }
+
+  // Stats : dernière charge, meilleur 1RM, delta vs séance précédente
+  const last = arr[arr.length - 1];
+  const best = Math.max(...arr.map(e => est1RM(e.w, e.r)));
+  // Delta 1RM : dernier jour vs jour précédent (meilleur set de chaque jour)
+  const byDay = {};
+  arr.forEach(e => { byDay[e.d] = Math.max(byDay[e.d] || 0, est1RM(e.w, e.r)); });
+  const days = Object.keys(byDay).sort();
+  let deltaTxt = '—', deltaCls = 'nt';
+  if (days.length > 1) {
+    const dv = byDay[days[days.length-1]] - byDay[days[days.length-2]];
+    deltaTxt = (dv >= 0 ? '+' : '') + dv.toFixed(1);
+    deltaCls = dv > 0 ? 'up' : dv < 0 ? 'dn' : 'nt';
+  }
+  const dcol = {up:'var(--legs)', dn:'var(--push)', nt:'var(--tx)'}[deltaCls];
+  st.innerHTML = `<div class="lg-stats">
+    <div class="lg-st"><div class="lg-st-v">${last.w}<span style="font-size:11px;color:var(--mu)"> kg</span></div><div class="lg-st-l">Dernier</div></div>
+    <div class="lg-st"><div class="lg-st-v">${best.toFixed(0)}<span style="font-size:11px;color:var(--mu)"> kg</span></div><div class="lg-st-l">1RM max</div></div>
+    <div class="lg-st"><div class="lg-st-v" style="color:${dcol}">${deltaTxt}</div><div class="lg-st-l">Δ 1RM</div></div>
+  </div>`;
+
+  // Graphique 1RM (meilleur set par jour, 20 derniers jours)
+  const pts = days.slice(-20).map(d => ({d, v: byDay[d]}));
+  cw.style.display = pts.length > 1 ? 'block' : 'none';
+  if (pts.length > 1) drawLogChart(pts);
+
+  // Historique (plus récent en premier)
+  let hh = '';
+  [...arr].reverse().forEach(e => {
+    const lbl = new Date(e.d + 'T12:00:00').toLocaleDateString('fr-FR', {day:'numeric', month:'short'});
+    hh += `<div class="lg-row">
+      <div class="lg-d">${lbl}</div>
+      <div class="lg-v">${e.w} kg × ${e.r}</div>
+      <div class="lg-rm">1RM ${est1RM(e.w, e.r).toFixed(0)}</div>
+      <button class="lg-x lgdelbtn" data-ts="${e.ts}">✕</button>
+    </div>`;
+  });
+  hist.innerHTML = hh;
+  hist.querySelectorAll('.lgdelbtn').forEach(x => x.addEventListener('click', () => delLog(parseInt(x.dataset.ts))));
+}
+
+function drawLogChart(pts) {
+  const svg = document.getElementById('lgChart');
+  if (!svg) return;
+  const W=300, H=90, P=12;
+  const vals = pts.map(p => p.v);
+  const mn = Math.min(...vals), mx = Math.max(...vals), rng = mx - mn || 1;
+  const xy = pts.map((p, i) => [
+    (P + i / (pts.length-1) * (W - P*2)).toFixed(1),
+    (P + (1 - (p.v - mn) / rng) * (H - P*2)).toFixed(1)
+  ]);
+  const pd = xy.map((p, i) => `${i ? 'L' : 'M'}${p[0]},${p[1]}`).join(' ');
+  const ad = pd + ` L${xy[xy.length-1][0]},${H} L${xy[0][0]},${H} Z`;
+  svg.innerHTML = `
+    <defs><linearGradient id="lgg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3DBA72" stop-opacity=".3"/>
+      <stop offset="100%" stop-color="#3DBA72" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${ad}" fill="url(#lgg)"/>
+    <path d="${pd}" fill="none" stroke="#3DBA72" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${xy[xy.length-1][0]}" cy="${xy[xy.length-1][1]}" r="3.5" fill="#3DBA72"/>
+    <text x="${xy[xy.length-1][0]}" y="${(parseFloat(xy[xy.length-1][1])-7).toFixed(1)}" text-anchor="middle" font-family="Bebas Neue,sans-serif" font-size="11" fill="#3DBA72">${vals[vals.length-1].toFixed(0)}</text>
+    <text x="${P}" y="${H-2}" font-family="JetBrains Mono,monospace" font-size="8" fill="#6B6B80">${mn.toFixed(0)}</text>
+    <text x="${W-P}" y="${H-2}" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="8" fill="#6B6B80">${mx.toFixed(0)}</text>`;
+}
+
+async function saveLog() {
+  if (!_lc) return;
+  const w = parseFloat(document.getElementById('lgW').value);
+  const r = parseInt(document.getElementById('lgR').value);
+  if (isNaN(w) || w <= 0 || isNaN(r) || r <= 0) return;
+  if (!D.exlogs) D.exlogs = {};
+  if (!D.exlogs[_lc.eid]) D.exlogs[_lc.eid] = [];
+  D.exlogs[_lc.eid].push({
+    ts: Date.now(),
+    d: new Date().toISOString().slice(0, 10),
+    w, r
+  });
+  await window.FB.save('data', 'exlogs', {logs: D.exlogs});
+  document.getElementById('lgW').value = '';
+  document.getElementById('lgR').value = '';
+  renderLogBody();
+}
+
+async function delLog(ts) {
+  if (!_lc || !D.exlogs?.[_lc.eid]) return;
+  D.exlogs[_lc.eid] = D.exlogs[_lc.eid].filter(e => e.ts !== ts);
+  if (!D.exlogs[_lc.eid].length) delete D.exlogs[_lc.eid];
+  await window.FB.save('data', 'exlogs', {logs: D.exlogs});
+  renderLogBody();
+}
+
 // ── DIET ──────────────────────────────────────────────────────────────
 function getDiet() {
   const pid = getActivePid();
@@ -1300,6 +1509,32 @@ function renderDiet() {
     h += `<button class="abtn" id="edObj" style="width:100%;justify-content:center;min-height:44px;margin-top:12px;margin-bottom:4px">⚙️ Définir mon objectif calorique</button>`;
   }
 
+  // Carte macros (affichée si cibles définies ou macros saisies sur des aliments)
+  const mo = d.macros || {p:0, g:0, l:0};
+  const sumM = k => meals.reduce((a, m) => a + (m.foods || []).reduce((b, f) => b + (parseFloat(f[k]) || 0), 0), 0);
+  const tp = sumM('p'), tg = sumM('g'), tl = sumM('l');
+  if (tp + tg + tl > 0 || (mo.p + mo.g + mo.l) > 0) {
+    const macRow = (lbl, col, val, obj) => {
+      const pc = obj > 0 ? Math.min(100, Math.round(val / obj * 100)) : 0;
+      return `<div class="mac-row">
+        <span class="mac-lbl" style="color:${col}">${lbl}</span>
+        <div class="mac-bar"><div class="mac-fill" style="width:${pc}%;background:${col}"></div></div>
+        <span class="mac-val">${Math.round(val)}${obj > 0 ? ' / ' + obj : ''} g</span>
+      </div>`;
+    };
+    h += `<div class="cal-card">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--mu);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+        <span>Macros</span>
+        <button class="abtn" id="edMc">✏️ Objectifs</button>
+      </div>
+      ${macRow('P', 'var(--pull)', tp, mo.p)}
+      ${macRow('G', 'var(--cardio)', tg, mo.g)}
+      ${macRow('L', 'var(--protocol)', tl, mo.l)}
+    </div>`;
+  } else {
+    h += `<button class="abtn" id="edMc" style="width:100%;justify-content:center;min-height:44px;margin-bottom:4px">🍗 Définir mes objectifs macros</button>`;
+  }
+
   // Meals
   meals.forEach((m, mi) => {
     const mCal = (m.foods || []).reduce((a, f) => a + (f.cal || 0), 0);
@@ -1317,8 +1552,10 @@ function renderDiet() {
       h += `<div style="padding:11px 14px;font-size:12px;color:var(--mu);font-style:italic">Aucun aliment — appuie sur ＋</div>`;
     } else {
       (m.foods || []).forEach(f => {
+        const fm = (parseFloat(f.p) || 0) + (parseFloat(f.g) || 0) + (parseFloat(f.l) || 0) > 0
+          ? `<div class="fmac">P ${f.p || 0} · G ${f.g || 0} · L ${f.l || 0}</div>` : '';
         h += `<div class="frow">
-          <div class="fi"><div class="fn">${f.name}</div><div class="fq">${f.qty}</div></div>
+          <div class="fi"><div class="fn">${f.name}</div><div class="fq">${f.qty}</div>${fm}</div>
           <span class="fkc">${f.cal}</span>
           <button class="fdel fdelbtn" data-mid="${m.id}" data-fid="${f.id}">✕</button>
         </div>`;
@@ -1338,6 +1575,7 @@ function renderDiet() {
 
   b.innerHTML = h;
   b.querySelector('#edObj')?.addEventListener('click', openObjModal);
+  b.querySelector('#edMc')?.addEventListener('click', openMacroModal);
   b.querySelector('#addMlBtn')?.addEventListener('click', () => openMealModal(null));
   b.querySelectorAll('.med').forEach(x => x.addEventListener('click', () => openMealModal(x.dataset.mid)));
   b.querySelectorAll('.madd').forEach(x => x.addEventListener('click', () => openFoodModal(x.dataset.mid, null)));
@@ -1351,6 +1589,7 @@ function openObjModal() {
   document.getElementById('fN').value = 'Objectif journalier';
   document.getElementById('fQ').value = 'kcal / jour';
   document.getElementById('fC').value = getDiet().objective || '';
+  document.getElementById('fMacros').style.display = 'none';
   document.getElementById('fDl').style.display = 'none';
   document.getElementById('mFd').classList.add('open');
 }
@@ -1372,6 +1611,10 @@ function openFoodModal(mid, fid) {
   document.getElementById('fN').value = food ? food.name : '';
   document.getElementById('fQ').value = food ? food.qty : '';
   document.getElementById('fC').value = food ? food.cal : '';
+  document.getElementById('fMacros').style.display = 'flex';
+  document.getElementById('fP').value = food && food.p != null ? food.p : '';
+  document.getElementById('fG').value = food && food.g != null ? food.g : '';
+  document.getElementById('fL').value = food && food.l != null ? food.l : '';
   document.getElementById('fDl').style.display = food ? 'block' : 'none';
   document.getElementById('mFd').classList.add('open');
 }
@@ -1394,6 +1637,13 @@ async function saveFoodModal() {
       qty: document.getElementById('fQ').value.trim(),
       cal: parseInt(document.getElementById('fC').value) || 0
     };
+    // Macros optionnelles (P/G/L en grammes) — stockées seulement si saisies
+    const mp = parseFloat(document.getElementById('fP').value);
+    const mg = parseFloat(document.getElementById('fG').value);
+    const ml = parseFloat(document.getElementById('fL').value);
+    if (!isNaN(mp)) food.p = mp;
+    if (!isNaN(mg)) food.g = mg;
+    if (!isNaN(ml)) food.l = ml;
     if (_dc.fid) {
       const i = meal.foods.findIndex(f => f.id === _dc.fid);
       if (i >= 0) meal.foods[i] = food; else meal.foods.push(food);
@@ -1404,6 +1654,26 @@ async function saveFoodModal() {
   await saveDiet(d);
   document.getElementById('mFd').classList.remove('open');
   _dc = null;
+  renderDiet();
+}
+
+function openMacroModal() {
+  const mo = getDiet().macros || {p:0, g:0, l:0};
+  document.getElementById('mcP').value = mo.p || '';
+  document.getElementById('mcG').value = mo.g || '';
+  document.getElementById('mcL').value = mo.l || '';
+  document.getElementById('mMc').classList.add('open');
+}
+
+async function saveMacroModal() {
+  const d = JSON.parse(JSON.stringify(getDiet()));
+  d.macros = {
+    p: parseInt(document.getElementById('mcP').value) || 0,
+    g: parseInt(document.getElementById('mcG').value) || 0,
+    l: parseInt(document.getElementById('mcL').value) || 0
+  };
+  await saveDiet(d);
+  document.getElementById('mMc').classList.remove('open');
   renderDiet();
 }
 
@@ -1755,7 +2025,8 @@ function renderIE() {
         <div class="ie-chk"><input type="checkbox" id="expD" checked><label for="expD">🥗 Diet (profil actif)</label></div>
         <div class="ie-chk"><input type="checkbox" id="expP" checked><label for="expP">💉 Protocole (profil actif)</label></div>
         <div class="ie-chk"><input type="checkbox" id="expWg" checked><label for="expWg">⚖️ Poids</label></div>
-        <div class="ie-chk" style="margin-bottom:13px"><input type="checkbox" id="expC" checked><label for="expC">🔢 Compteur de séances</label></div>
+        <div class="ie-chk"><input type="checkbox" id="expC" checked><label for="expC">🔢 Compteur de séances</label></div>
+        <div class="ie-chk" style="margin-bottom:13px"><input type="checkbox" id="expL" checked><label for="expL">📊 Carnet de charges</label></div>
         <button class="fbtn pri" id="expCopyBtn" style="margin-bottom:9px">📋 Copier le code</button>
         <button class="fbtn sec" id="expShareBtn">🔗 Partager</button>
       </div>
@@ -1767,7 +2038,8 @@ function renderIE() {
         <div class="ie-chk"><input type="checkbox" id="impD" checked><label for="impD">🥗 Diet</label></div>
         <div class="ie-chk"><input type="checkbox" id="impP" checked><label for="impP">💉 Protocole</label></div>
         <div class="ie-chk"><input type="checkbox" id="impWg" checked><label for="impWg">⚖️ Poids</label></div>
-        <div class="ie-chk" style="margin-bottom:13px"><input type="checkbox" id="impC" checked><label for="impC">🔢 Compteur</label></div>
+        <div class="ie-chk"><input type="checkbox" id="impC" checked><label for="impC">🔢 Compteur</label></div>
+        <div class="ie-chk" style="margin-bottom:13px"><input type="checkbox" id="impL" checked><label for="impL">📊 Carnet de charges</label></div>
         <button class="fbtn pri" id="impApplyBtn">✅ Appliquer l'import</button>
         <div class="ie-st" id="impSt"></div>
       </div>
@@ -1787,6 +2059,7 @@ function buildExport() {
   if (document.getElementById('expP')?.checked)  out.protocol    = ppid ? (D.protocol  || {})[ppid] || {days:[]} : {days:[]};
   if (document.getElementById('expWg')?.checked) out.weights     = D.weights || [];
   if (document.getElementById('expC')?.checked)  out.counterBase = D.counterBase || 0;
+  if (document.getElementById('expL')?.checked)  out.exlogs      = D.exlogs || {};
   return JSON.stringify(out, null, 2);
 }
 
@@ -1846,6 +2119,17 @@ async function impApply() {
   if (document.getElementById('impC')?.checked && data.counterBase != null) {
     D.counterBase = data.counterBase;
     await window.FB.save('data', 'counter', {base: data.counterBase});
+  }
+  if (document.getElementById('impL')?.checked && data.exlogs) {
+    // Fusion : les logs importés s'ajoutent aux logs existants (par exercice)
+    if (!D.exlogs) D.exlogs = {};
+    for (const [eid, entries] of Object.entries(data.exlogs)) {
+      if (!D.exlogs[eid]) D.exlogs[eid] = [];
+      const known = new Set(D.exlogs[eid].map(e => e.ts));
+      entries.forEach(e => { if (!known.has(e.ts)) D.exlogs[eid].push(e); });
+      D.exlogs[eid].sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    }
+    await window.FB.save('data', 'exlogs', {logs: D.exlogs});
   }
 
   await saveProfiles();
@@ -2005,6 +2289,16 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('mlSa').addEventListener('click', saveMealModal);
   document.getElementById('mlDl').addEventListener('click', delMealModal);
   document.getElementById('mMl').addEventListener('click', e => { if (e.target === document.getElementById('mMl')) { document.getElementById('mMl').classList.remove('open'); _dc = null; } });
+
+  // Carnet de charges modal
+  document.getElementById('lgCa').addEventListener('click', closeLogModal);
+  document.getElementById('lgSa').addEventListener('click', saveLog);
+  document.getElementById('mLg').addEventListener('click', e => { if (e.target === document.getElementById('mLg')) closeLogModal(); });
+
+  // Objectifs macros modal
+  document.getElementById('mcCa').addEventListener('click', () => document.getElementById('mMc').classList.remove('open'));
+  document.getElementById('mcSa').addEventListener('click', saveMacroModal);
+  document.getElementById('mMc').addEventListener('click', e => { if (e.target === document.getElementById('mMc')) document.getElementById('mMc').classList.remove('open'); });
 
   // Injection modal
   document.getElementById('iCa').addEventListener('click', () => { document.getElementById('mInj').classList.remove('open'); _pc = null; });
